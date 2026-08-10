@@ -2,6 +2,12 @@ name = "ohe"
 main = "src/index.js"
 compatibility_date = "2025-08-01"
 
+# Requires robbiemed.org to be a zone on this Cloudflare account; `deploy`
+# then creates the DNS record itself. Nothing to add in the dashboard.
+[[routes]]
+pattern = "ohe.robbiemed.org"
+custom_domain = true
+
 [assets]
 directory = "./public"
 binding = "ASSETS"
