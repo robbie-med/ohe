@@ -146,16 +146,17 @@ You get the call, the doses, and one line of why. Nothing is added that isn't in
     <fieldset>
       <label>Access</label>
       <div class="tabs">
-        <button type="button" id="tab-byok" aria-pressed="true">Own PPQ key</button>
-        <button type="button" id="tab-code" aria-pressed="false">Redemption code</button>
+        <button type="button" id="tab-byok" aria-pressed="true">Use your own key</button>
+        <button type="button" id="tab-code" aria-pressed="false">Redeem a code</button>
       </div>
     </fieldset>
 
     <div id="pane-byok">
-      <label for="key">PPQ API key — stays in this browser, never sent to our server storage</label>
+      <label for="key">PPQ API key — optional</label>
       <input id="key" type="password" placeholder="sk-..." autocomplete="off">
-      <p class="note">Make an account at ppq.ai, top up, paste the key. Costs go to you,
-      roughly two cents per condense.</p>
+      <p class="note">You don't need this. Condenses are free until you run out, then you
+      can buy more. Paste a key only if you'd rather spend your own ppq.ai balance —
+      it stays in this browser and is never stored on our server.</p>
     </div>
 
     <div id="pane-code" hidden>
@@ -249,15 +250,13 @@ async function condense() {
   $("error").hidden = true;
   if (!text) return;
 
-  const headers = authHeaders();
-  if (!headers) { fail("Set a PPQ key or redeem a code first — Settings."); $("settings").showModal(); return; }
-
   $("go").disabled = true;
   $("go").textContent = "Condensing…";
   try {
     const res = await fetch("/api/condense", {
       method: "POST",
-      headers: { ...headers, "content-type": "application/json" },
+      // No headers at all is a valid first visit: the server mints free credits.
+      headers: { ...(authHeaders() || {}), "content-type": "application/json" },
       body: JSON.stringify({ text, model: $("model").value || undefined }),
     });
     const data = await res.json();
