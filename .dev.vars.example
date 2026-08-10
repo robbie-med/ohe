@@ -8,6 +8,9 @@ PPQ_KEY=sk-your-ppq-key
 # Password for POST /api/admin/codes. Any long random string.
 ADMIN_KEY=change-me
 
+# Free condenses handed to each new visitor. Default 5. Costs you ~1.3c each.
+# FREE_CREDITS=5
+
 # Optional. Overrides the upstream base URL — point it at a stub to exercise
 # the request path without spending credits. Defaults to https://api.ppq.ai
 # PPQ_BASE=http://127.0.0.1:8799

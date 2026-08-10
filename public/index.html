@@ -175,6 +175,12 @@ You get the call, the doses, and one line of why. Nothing is added that isn't in
 </dialog>
 
 <script type="module">
+// Point this at your checkout. Configure the merchant's post-purchase redirect
+// to come back as  https://<your-worker>/?code=THEIR-CODE  and the buyer never
+// sees a code at all. Works with any rail — Gumroad, Lemon Squeezy, Polar, or a
+// link you text someone after a Venmo.
+const BUY_URL = "https://example.gumroad.com/l/ohe";
+
 const $ = (id) => document.getElementById(id);
 const store = {
   get: (k) => localStorage.getItem(`oeis.${k}`) || "",
@@ -193,9 +199,12 @@ function authHeaders() {
 function refreshStatus() {
   const key = store.get("key"), token = store.get("token");
   const credits = store.get("credits");
-  $("status").textContent = key
-    ? "own key"
-    : token ? `${credits || 0} condenses left` : "no key set";
+  if (key) { $("status").innerHTML = "own key"; return; }
+  if (!token) { $("status").textContent = "5 free condenses"; return; }
+  const n = Number(credits || 0);
+  $("status").innerHTML = n > 2
+    ? `${n} condenses left`
+    : `${n} left &middot; <a href="${BUY_URL}">get more</a>`;
 }
 
 // --- render ------------------------------------------------------------
@@ -255,18 +264,48 @@ async function condense() {
     if (!res.ok) throw new Error(data.error || `request failed (${res.status})`);
 
     render(data.script);
+    // First visit: the server minted a free-credit token. Keep it, or the next
+    // paste mints another one and the free tier never actually runs out.
+    if (data.token) store.set("token", data.token);
     if (typeof data.credits === "number") store.set("credits", String(data.credits));
     $("status").textContent = data.cached ? "cached — free" : `${data.model}`;
     setTimeout(refreshStatus, 2500);
   } catch (err) {
-    fail(err.message);
+    if (err.message === "out of credits") offerToBuy();
+    else fail(err.message);
   } finally {
     $("go").disabled = false;
     $("go").textContent = "Condense";
   }
 }
 
-function fail(msg) { $("error").textContent = msg; $("error").hidden = false; }
+function fail(msg) {
+  $("error").innerHTML = esc(msg);
+  $("error").hidden = false;
+}
+
+function offerToBuy() {
+  $("error").innerHTML =
+    `Out of condenses. <a href="${BUY_URL}">Get more</a> — you'll come back with them already added.`;
+  $("error").hidden = false;
+}
+
+// Redeem a code handed over in the URL, so a purchase redirect lands the buyer
+// back here with credits already on their token. Nothing to copy or type.
+async function redeem(code, quiet) {
+  const res = await fetch("/api/redeem", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ code, token: store.get("token") || undefined }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error);
+  store.set("token", data.token);
+  store.set("credits", String(data.credits));
+  refreshStatus();
+  if (!quiet) $("credit-note").textContent = `Redeemed. ${data.credits} condenses available.`;
+  return data;
+}
 
 // --- settings ----------------------------------------------------------
 function showTab(which) {
@@ -287,18 +326,8 @@ $("redeem").onclick = async () => {
   const code = $("code").value.trim();
   if (!code) return;
   try {
-    const res = await fetch("/api/redeem", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ code, token: store.get("token") || undefined }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    store.set("token", data.token);
-    store.set("credits", String(data.credits));
-    $("credit-note").textContent = `Redeemed. ${data.credits} condenses available.`;
+    await redeem(code);
     $("code").value = "";
-    refreshStatus();
   } catch (err) {
     $("credit-note").textContent = err.message;
   }
@@ -321,6 +350,19 @@ $("key").value = store.get("key");
 $("model").value = store.get("model");
 refreshStatus();
 updateCount();
+
+(async () => {
+  const code = new URLSearchParams(location.search).get("code");
+  if (!code) return;
+  try {
+    const { credits } = await redeem(code, true);
+    $("status").textContent = `${credits} condenses added`;
+  } catch (err) {
+    fail(`Could not redeem that code: ${err.message}`);
+  }
+  // Strip it either way — a stale code in the address bar gets re-shared.
+  history.replaceState(null, "", location.pathname);
+})();
 </script>
 </body>
 </html>

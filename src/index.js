@@ -2,7 +2,10 @@ import { SYSTEM_PROMPT, userPrompt, MAX_INPUT_CHARS } from "./prompt.js";
 
 const DEFAULT_PPQ_BASE = "https://api.ppq.ai";
 const CACHE_TTL = 60 * 60 * 24 * 30; // 30 days
-const DEFAULT_MODEL = "gpt-4.1-mini";
+const DEFAULT_MODEL = "claude-haiku-4.5";
+const DEFAULT_FREE_CREDITS = 5;
+// The client keys its "buy" prompt off this exact string.
+const OUT_OF_CREDITS = "out of credits";
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -35,22 +38,34 @@ export default {
 
 // --- PPQ auth resolution ----------------------------------------------
 
-// Two tiers. BYOK: the browser sends the user's own PPQ key, we never store it.
-// Metered: the browser sends an access token we issued, we spend our key and
-// decrement their credit. Anything else is unauthenticated.
+// Three ways in, in priority order:
+//   BYOK    — the browser sends the user's own PPQ key. We never store it.
+//   token   — an access token we issued. We spend our key, decrement a credit.
+//   nothing — first visit. We mint a token with free credits and get on with it.
+// The last one is the whole point: asking a physician to make a ppq.ai account
+// and paste a key before they see any output means they never see any output.
 async function resolveAuth(request, env) {
   const byok = request.headers.get("x-ppq-key");
   if (byok) return { key: byok, tier: "byok" };
 
+  if (!env.PPQ_KEY) return { error: "no PPQ key supplied" };
+
   const token = request.headers.get("x-access-token");
-  if (token && env.PPQ_KEY) {
+  if (token) {
     const account = await getAccount(env, token);
     if (!account) return { error: "unknown access token" };
-    if (account.credits <= 0) return { error: "out of credits" };
+    if (account.credits <= 0) return { error: OUT_OF_CREDITS };
     return { key: env.PPQ_KEY, tier: "metered", token, account };
   }
 
-  return { error: "no PPQ key or access token supplied" };
+  const fresh = crypto.randomUUID().replace(/-/g, "");
+  const account = {
+    credits: Number(env.FREE_CREDITS) || DEFAULT_FREE_CREDITS,
+    created: Date.now(),
+    free: true,
+  };
+  await env.STORE.put(accountKey(fresh), JSON.stringify(account));
+  return { key: env.PPQ_KEY, tier: "metered", token: fresh, account, minted: true };
 }
 
 const accountKey = (token) => `tok:${token}`;
@@ -76,8 +91,11 @@ async function handleCondense(request, env) {
   const model = body.model || env.MODEL || DEFAULT_MODEL;
   const cacheKey = `oe:${await sha256(`${model}\n${text}`)}`;
 
+  const minted = auth.minted ? auth.token : undefined;
+
   const hit = await env.STORE.get(cacheKey, "json");
-  if (hit) return json({ ...hit, cached: true, credits: auth.account?.credits });
+  if (hit)
+    return json({ ...hit, cached: true, credits: auth.account?.credits, token: minted });
 
   const script = await callPPQ(ppqBase(env), auth.key, model, text);
 
@@ -95,7 +113,7 @@ async function handleCondense(request, env) {
     );
   }
 
-  return json({ ...script, cached: false, credits });
+  return json({ ...script, cached: false, credits, token: minted });
 }
 
 // Overridable so the request path can be exercised against a stub.

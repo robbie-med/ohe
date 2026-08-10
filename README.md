@@ -53,20 +53,36 @@ wrangler.toml       Config
 One Worker serves both the static page and the API. No build step, no framework,
 no external requests from the page.
 
-## Two tiers
+## Access
 
-**BYOK.** User makes their own [ppq.ai](https://ppq.ai) account, pastes their key
-into Settings. It lives in `localStorage` and rides on the `x-ppq-key` header;
-the server forwards it and stores nothing. Zero inference cost to you, zero
-billing infrastructure, zero margin. Works with no secrets configured.
+**Nobody signs up for anything.** A first-time visitor pastes and gets an answer.
+The server mints an anonymous token with `FREE_CREDITS` (default 5) on the first
+request and hands it back; the browser keeps it in `localStorage`. No account, no
+key, no code, no email.
 
-**Metered.** You hold one PPQ key server-side. Users buy a redemption code
-however you like, redeem it in the app for an anonymous access token, and each
-condense decrements one credit. Enabled by setting the `PPQ_KEY` secret.
+When those run out the API returns `out of credits` and the page shows a buy
+link. Purchase produces a redemption code, and the merchant's post-purchase
+redirect brings the buyer back as:
 
-Redemption codes are the seam between payment and product. Gumroad, Lemon
-Squeezy, Polar, Venmo, cash — the app never knows which. You mint a code, they
-type it in.
+```
+https://<your-worker>/?code=THEIR-CODE
+```
+
+The page redeems it on load, tops up the *existing* token, and strips the code
+from the address bar. The buyer never sees or types a code. Set `BUY_URL` at the
+top of the script in `public/index.html`.
+
+This works with any rail — Gumroad, Lemon Squeezy, Polar, or a link you text
+someone after a Venmo. Codes are minted by hand (below), so there is no payment
+integration to maintain until volume justifies one.
+
+**BYOK** remains for anyone who'd rather spend their own money: paste a
+[ppq.ai](https://ppq.ai) key in Settings and it rides on the `x-ppq-key` header,
+forwarded and never stored. Free credits are skipped entirely.
+
+Free credits are deliberately not rate-limited. At ~1.3¢ a condense, 5 free is
+~6.5¢ per new visitor — clearing `localStorage` for another 5 is cheaper to
+absorb than to prevent. Add Cloudflare Turnstile if that ever stops being true.
 
 ## Deploy
 
