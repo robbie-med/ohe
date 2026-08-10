@@ -16,7 +16,7 @@ binding = "ASSETS"
 # Create with:  npx wrangler kv namespace create STORE
 [[kv_namespaces]]
 binding = "STORE"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+id = "9756d1a3279e42e8a8fd14315c521675"
 
 [vars]
 # Default model. Must be a string PPQ actually serves — their ids use dots
