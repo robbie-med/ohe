@@ -1,0 +1,23 @@
+name = "ohe"
+main = "src/index.js"
+compatibility_date = "2025-08-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# Cache (hashed inputs), redemption codes, and credit balances all live here.
+# Create with:  npx wrangler kv namespace create STORE
+[[kv_namespaces]]
+binding = "STORE"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+[vars]
+# Default model. Must be a string PPQ actually serves — their ids use dots
+# (claude-haiku-4.5), not the vendors' own dashed form.
+#   curl https://api.ppq.ai/models -H "authorization: Bearer $PPQ_KEY"
+MODEL = "claude-haiku-4.5"
+
+# Secrets, set with `npx wrangler secret put NAME` (never in this file):
+#   PPQ_KEY    — your PPQ key. Only needed for the paid/metered tier.
+#   ADMIN_KEY  — the password for minting redemption codes.

@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ohe — OE is soe verboes....cut to the chase!</title>
+<style>
+:root {
+  --bg: #fbfaf8; --panel: #fff; --ink: #17181a; --muted: #6b6f76;
+  --line: #e3e1dc; --accent: #7a2e1e; --accent-soft: #f3ebe8;
+  --gap-ink: #8a5a00; --gap-bg: #fdf6e6;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16161a; --panel: #1d1e23; --ink: #e9e7e3; --muted: #979ba3;
+    --line: #2f3138; --accent: #e0917c; --accent-soft: #2a1f1c;
+    --gap-ink: #d9ab52; --gap-bg: #2a2314;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+header {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel);
+}
+h1 { font-size: 15px; margin: 0; font-weight: 620; letter-spacing: -0.01em; }
+h1 span { color: var(--muted); font-weight: 400; }
+.spacer { flex: 1; }
+.meta { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+button, select, input, textarea {
+  font: inherit; color: inherit; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px;
+}
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--muted); }
+button:disabled { opacity: .5; cursor: default; }
+button.primary {
+  background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 560;
+}
+@media (prefers-color-scheme: dark) { button.primary { color: #1a1210; } }
+main { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(340px, 1.1fr); min-height: calc(100vh - 53px); }
+@media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+.pane { padding: 18px 20px; }
+.pane + .pane { border-left: 1px solid var(--line); }
+@media (max-width: 860px) { .pane + .pane { border-left: 0; border-top: 1px solid var(--line); } }
+textarea#src {
+  width: 100%; min-height: 62vh; resize: vertical; padding: 12px;
+  font: 13.5px/1.6 var(--mono); border-radius: 8px;
+}
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.note {
+  font-size: 12.5px; color: var(--muted); margin: 10px 0 0; padding: 8px 10px;
+  border-left: 2px solid var(--line);
+}
+.err {
+  border-left-color: var(--accent); color: var(--accent);
+  background: var(--accent-soft); border-radius: 0 6px 6px 0;
+}
+/* --- script --- */
+.script > section { margin-bottom: 20px; }
+.script h2 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .09em;
+  color: var(--muted); margin: 0 0 8px; font-weight: 640;
+}
+.verdict {
+  font-size: 20px; line-height: 1.35; font-weight: 620; letter-spacing: -0.015em;
+  margin: 0 0 10px;
+}
+.because {
+  margin: 0 0 24px; color: var(--muted); font-size: 14.5px; line-height: 1.5;
+  border-left: 2px solid var(--line); padding-left: 12px;
+}
+ol.steps { margin: 0; padding-left: 22px; }
+ol.steps li { margin-bottom: 10px; }
+ol.steps b { font-weight: 600; }
+ol.steps em, ul.avoid em {
+  font-style: normal; color: var(--muted); display: block;
+  font-size: 13.5px; line-height: 1.45; margin-top: 2px;
+}
+ul.avoid { margin: 0; padding: 0; list-style: none; }
+ul.avoid li {
+  margin-bottom: 9px; padding-left: 20px; position: relative;
+}
+ul.avoid li::before {
+  content: "×"; position: absolute; left: 4px; top: -1px;
+  color: var(--accent); font-weight: 700; font-size: 15px;
+}
+ul.gaps {
+  margin: 0; padding: 10px 14px 10px 30px; font-size: 13.5px;
+  background: var(--gap-bg); border-radius: 8px; color: var(--ink);
+}
+ul.gaps li { margin-bottom: 5px; }
+ul.gaps li:last-child { margin-bottom: 0; }
+.empty { color: var(--muted); font-style: italic; font-size: 13.5px; }
+dialog {
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+  color: var(--ink); padding: 20px; max-width: 460px; width: calc(100% - 40px);
+}
+dialog::backdrop { background: rgba(0,0,0,.4); }
+dialog label { display: block; font-size: 12.5px; color: var(--muted); margin: 12px 0 4px; }
+dialog input, dialog select { width: 100%; }
+fieldset { border: 0; padding: 0; margin: 0 0 4px; }
+.tabs { display: flex; gap: 4px; }
+.tabs button { flex: 1; font-size: 13px; }
+.tabs button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Ohe <span>OE is soe verboes....cut to the chase!</span></h1>
+  <div class="spacer"></div>
+  <span class="meta" id="status"></span>
+  <button id="settings-btn">Settings</button>
+</header>
+
+<main>
+  <div class="pane">
+    <textarea id="src" placeholder="Paste the whole OpenEvidence answer here — references and all.
+
+You get the call, the doses, and one line of why. Nothing is added that isn't in what you paste; anything it left open shows up under Unresolved."></textarea>
+    <div class="row">
+      <button class="primary" id="go">Condense</button>
+      <button id="clear">Clear</button>
+      <span class="meta" id="count"></span>
+    </div>
+    <p class="note">Strip identifiers before pasting if the answer was built from a real
+    vignette. Inputs are hashed for caching and not retained in readable form.</p>
+    <p class="note err" id="error" hidden></p>
+  </div>
+
+  <div class="pane">
+    <div class="script" id="out">
+      <p class="empty">The answer appears here.</p>
+    </div>
+  </div>
+</main>
+
+<dialog id="settings">
+  <form method="dialog">
+    <fieldset>
+      <label>Access</label>
+      <div class="tabs">
+        <button type="button" id="tab-byok" aria-pressed="true">Own PPQ key</button>
+        <button type="button" id="tab-code" aria-pressed="false">Redemption code</button>
+      </div>
+    </fieldset>
+
+    <div id="pane-byok">
+      <label for="key">PPQ API key — stays in this browser, never sent to our server storage</label>
+      <input id="key" type="password" placeholder="sk-..." autocomplete="off">
+      <p class="note">Make an account at ppq.ai, top up, paste the key. Costs go to you,
+      roughly two cents per condense.</p>
+    </div>
+
+    <div id="pane-code" hidden>
+      <label for="code">Redemption code</label>
+      <input id="code" placeholder="XXXX-XXXX-XXXX" autocomplete="off">
+      <button type="button" id="redeem" style="margin-top:8px">Redeem</button>
+      <p class="note" id="credit-note"></p>
+    </div>
+
+    <label for="model">Model — any string ppq.ai serves. Blank uses the server default.</label>
+    <input id="model" placeholder="server default">
+
+    <div class="row" style="margin-top:18px; justify-content:flex-end">
+      <button value="close">Done</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const store = {
+  get: (k) => localStorage.getItem(`oeis.${k}`) || "",
+  set: (k, v) => v ? localStorage.setItem(`oeis.${k}`, v) : localStorage.removeItem(`oeis.${k}`),
+};
+
+// --- auth headers ------------------------------------------------------
+function authHeaders() {
+  const key = store.get("key");
+  if (key) return { "x-ppq-key": key };
+  const token = store.get("token");
+  if (token) return { "x-access-token": token };
+  return null;
+}
+
+function refreshStatus() {
+  const key = store.get("key"), token = store.get("token");
+  const credits = store.get("credits");
+  $("status").textContent = key
+    ? "own key"
+    : token ? `${credits || 0} condenses left` : "no key set";
+}
+
+// --- render ------------------------------------------------------------
+const esc = (s) => String(s ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+function section(title, inner) {
+  return inner ? `<section><h2>${title}</h2>${inner}</section>` : "";
+}
+
+function render(s) {
+  const parts = [];
+
+  if (s.bottom_line)
+    parts.push(`<p class="verdict">${esc(s.bottom_line)}</p>`);
+  if (s.because)
+    parts.push(`<p class="because">${esc(s.because)}</p>`);
+
+  parts.push(section("Do now",
+    s.do_now.length
+      ? `<ol class="steps">${s.do_now.map((d) =>
+          `<li><b>${esc(d.action)}</b>${d.detail ? `<em>${esc(d.detail)}</em>` : ""}</li>`).join("")}</ol>`
+      : ""));
+
+  parts.push(section("Don't",
+    s.avoid.length
+      ? `<ul class="avoid">${s.avoid.map((a) =>
+          `<li><b>${esc(a.what)}</b>${a.why ? ` <em>${esc(a.why)}</em>` : ""}</li>`).join("")}</ul>`
+      : ""));
+
+  // Only shows when the source actually left something open.
+  parts.push(section("Unresolved",
+    s.unresolved.length
+      ? `<ul class="gaps">${s.unresolved.map((g) => `<li>${esc(g)}</li>`).join("")}</ul>`
+      : ""));
+
+  $("out").innerHTML = parts.join("");
+}
+
+// --- condense ----------------------------------------------------------
+async function condense() {
+  const text = $("src").value.trim();
+  $("error").hidden = true;
+  if (!text) return;
+
+  const headers = authHeaders();
+  if (!headers) { fail("Set a PPQ key or redeem a code first — Settings."); $("settings").showModal(); return; }
+
+  $("go").disabled = true;
+  $("go").textContent = "Condensing…";
+  try {
+    const res = await fetch("/api/condense", {
+      method: "POST",
+      headers: { ...headers, "content-type": "application/json" },
+      body: JSON.stringify({ text, model: $("model").value || undefined }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `request failed (${res.status})`);
+
+    render(data.script);
+    if (typeof data.credits === "number") store.set("credits", String(data.credits));
+    $("status").textContent = data.cached ? "cached — free" : `${data.model}`;
+    setTimeout(refreshStatus, 2500);
+  } catch (err) {
+    fail(err.message);
+  } finally {
+    $("go").disabled = false;
+    $("go").textContent = "Condense";
+  }
+}
+
+function fail(msg) { $("error").textContent = msg; $("error").hidden = false; }
+
+// --- settings ----------------------------------------------------------
+function showTab(which) {
+  $("tab-byok").setAttribute("aria-pressed", String(which === "byok"));
+  $("tab-code").setAttribute("aria-pressed", String(which === "code"));
+  $("pane-byok").hidden = which !== "byok";
+  $("pane-code").hidden = which !== "code";
+}
+
+$("tab-byok").onclick = () => showTab("byok");
+$("tab-code").onclick = () => showTab("code");
+$("settings-btn").onclick = () => $("settings").showModal();
+
+$("key").oninput = (e) => { store.set("key", e.target.value.trim()); refreshStatus(); };
+$("model").oninput = (e) => store.set("model", e.target.value.trim());
+
+$("redeem").onclick = async () => {
+  const code = $("code").value.trim();
+  if (!code) return;
+  try {
+    const res = await fetch("/api/redeem", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code, token: store.get("token") || undefined }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    store.set("token", data.token);
+    store.set("credits", String(data.credits));
+    $("credit-note").textContent = `Redeemed. ${data.credits} condenses available.`;
+    $("code").value = "";
+    refreshStatus();
+  } catch (err) {
+    $("credit-note").textContent = err.message;
+  }
+};
+
+// --- boot --------------------------------------------------------------
+$("go").onclick = condense;
+$("clear").onclick = () => { $("src").value = ""; updateCount(); $("out").innerHTML = '<p class="empty">The answer appears here.</p>'; };
+$("src").oninput = updateCount;
+$("src").addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") condense();
+});
+
+function updateCount() {
+  const n = $("src").value.length;
+  $("count").textContent = n ? `${n.toLocaleString()} chars` : "";
+}
+
+$("key").value = store.get("key");
+$("model").value = store.get("model");
+refreshStatus();
+updateCount();
+</script>
+</body>
+</html>

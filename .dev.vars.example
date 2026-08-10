@@ -1,0 +1,13 @@
+# Copy to .dev.vars for local development (gitignored).
+# In production these are secrets: npx wrangler secret put PPQ_KEY
+
+# Your ppq.ai key. Only needed for the paid/metered tier — omit it and the
+# app runs BYOK-only.
+PPQ_KEY=sk-your-ppq-key
+
+# Password for POST /api/admin/codes. Any long random string.
+ADMIN_KEY=change-me
+
+# Optional. Overrides the upstream base URL — point it at a stub to exercise
+# the request path without spending credits. Defaults to https://api.ppq.ai
+# PPQ_BASE=http://127.0.0.1:8799
